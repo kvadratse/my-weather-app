@@ -1,14 +1,18 @@
-import { useState, FormEvent, useEffect } from "react"
+import { useState, FormEvent, useEffect, useCallback } from "react"
 import { Search, MapPin, Cloud } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { fetchCurrentWeather, fetchForecast, CurrentWeather, ForecastDay } from "@/lib/weather"
+import { fetchCurrentWeather, fetchForecast, CurrentWeather, ForecastDay, reverseGeocode } from "@/lib/weather"
 import { getGradient } from "@/lib/weatherUtils"
 import { WeatherCard } from "@/components/WeatherCard"
 import { ForecastCard } from "@/components/ForecastCard"
 import { useTheme } from "@/hooks/useTheme"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { useGeolocation } from "@/hooks/useGeolocation"
+import { useRecentSearches } from "@/hooks/useRecentSearches"
+import { GeolocationBanner } from "@/components/GeolocationBanner"
+import { RecentSearches } from "@/components/RecentSearches"
 
 type Status = "idle" | "loading" | "success" | "error"
 
@@ -21,35 +25,56 @@ export default function App() {
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [gradient, setGradient] = useState("from-violet-600 via-purple-600 to-blue-700")
 
+  const { status: geoStatus, lat, lon, previousChoice, requestLocation, dismissPrompt } = useGeolocation()
+  const { recents, addRecent, clearRecents } = useRecentSearches()
+
   useEffect(() => {
     if (weather) {
       setGradient(getGradient(weather.condition, weather.icon, theme === "dark"))
     }
   }, [theme, weather])
 
-  async function handleSearch(e: FormEvent) {
-    e.preventDefault()
-    const city = query.trim()
+  const loadWeather = useCallback(async (city: string) => {
     if (!city) return
-
     setStatus("loading")
     setErrorMsg("")
     setWeather(null)
     setForecast([])
-
     try {
       const { geo, weather: currentWeather } = await fetchCurrentWeather(city)
       const forecastData = await fetchForecast(geo.lat, geo.lon)
-
       setWeather(currentWeather)
       setForecast(forecastData)
       setGradient(getGradient(currentWeather.condition, currentWeather.icon, theme === "dark"))
       setStatus("success")
+      addRecent(currentWeather.city)
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Något gick fel")
       setStatus("error")
     }
+  }, [theme, addRecent])
+
+  function handleSearch(e: FormEvent) {
+    e.preventDefault()
+    loadWeather(query.trim())
   }
+
+  useEffect(() => {
+    if (geoStatus === "granted" && lat !== null && lon !== null) {
+      ;(async () => {
+        try {
+          setStatus("loading")
+          setErrorMsg("")
+          const geo = await reverseGeocode(lat, lon)
+          setQuery(geo.name)
+          await loadWeather(geo.name)
+        } catch (err) {
+          setErrorMsg(err instanceof Error ? err.message : "Kunde inte hämta platsväder")
+          setStatus("error")
+        }
+      })()
+    }
+  }, [geoStatus, lat, lon, loadWeather])
 
   return (
     <div
@@ -108,6 +133,20 @@ export default function App() {
               </span>
             </Button>
           </form>
+
+          {previousChoice === null && geoStatus !== "granted" && (
+            <GeolocationBanner
+              onAllow={requestLocation}
+              onDismiss={dismissPrompt}
+              isRequesting={geoStatus === "requesting"}
+            />
+          )}
+
+          <RecentSearches
+            recents={recents}
+            onSelect={(city) => { setQuery(city); loadWeather(city) }}
+            onClear={clearRecents}
+          />
         </section>
 
         {/* Error */}

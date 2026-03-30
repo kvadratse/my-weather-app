@@ -62,6 +62,15 @@ export async function fetchCurrentWeather(city: string): Promise<{ geo: GeoResul
   }
 }
 
+export async function reverseGeocode(lat: number, lon: number): Promise<GeoResult> {
+  const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error("Kunde inte utföra omvänd geokodning")
+  const data: GeoResult[] = await res.json()
+  if (!data.length) throw new Error("Hittade inte din plats")
+  return data[0]
+}
+
 export async function fetchForecast(lat: number, lon: number): Promise<ForecastDay[]> {
   const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=sv`
   const res = await fetch(url)
