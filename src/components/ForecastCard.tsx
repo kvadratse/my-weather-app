@@ -1,12 +1,14 @@
 import { ForecastDay } from "@/lib/weather"
 import { formatDay } from "@/lib/weatherUtils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TempUnit, convertTemp } from "@/hooks/useUnit"
 
 interface Props {
   forecast: ForecastDay[]
+  unit: TempUnit
 }
 
-export function ForecastCard({ forecast }: Props) {
+export function ForecastCard({ forecast, unit }: Props) {
   return (
     <Card className="mt-4" aria-label="5-dagarsprognos">
       <CardHeader className="pb-2">
@@ -26,9 +28,9 @@ export function ForecastCard({ forecast }: Props) {
               />
               <span className="text-white/60 text-sm flex-1 capitalize hidden sm:block">{day.description}</span>
               <div className="flex items-center gap-3 text-sm font-semibold">
-                <span className="text-white">{day.high}°</span>
+                <span className="text-white">{convertTemp(day.high, unit)}°</span>
                 <span className="text-white/40">/</span>
-                <span className="text-white/60">{day.low}°</span>
+                <span className="text-white/60">{convertTemp(day.low, unit)}°</span>
               </div>
             </li>
           ))}

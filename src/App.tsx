@@ -8,6 +8,7 @@ import { getGradient } from "@/lib/weatherUtils"
 import { WeatherCard } from "@/components/WeatherCard"
 import { ForecastCard } from "@/components/ForecastCard"
 import { useTheme } from "@/hooks/useTheme"
+import { useUnit } from "@/hooks/useUnit"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { useGeolocation } from "@/hooks/useGeolocation"
 import { useRecentSearches } from "@/hooks/useRecentSearches"
@@ -18,6 +19,7 @@ type Status = "idle" | "loading" | "success" | "error"
 
 export default function App() {
   const { theme, toggle } = useTheme()
+  const { unit, toggleUnit } = useUnit()
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<Status>("idle")
   const [errorMsg, setErrorMsg] = useState("")
@@ -164,8 +166,8 @@ export default function App() {
         {/* Results */}
         {status === "success" && weather && (
           <section aria-label="Väderresultat" aria-live="polite">
-            <WeatherCard weather={weather} />
-            {forecast.length > 0 && <ForecastCard forecast={forecast} />}
+            <WeatherCard weather={weather} unit={unit} onToggleUnit={toggleUnit} />
+            {forecast.length > 0 && <ForecastCard forecast={forecast} unit={unit} />}
           </section>
         )}
       </main>
