@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react"
+import { useState, FormEvent, useEffect } from "react"
 import { Search, MapPin, Cloud } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,16 +7,25 @@ import { fetchCurrentWeather, fetchForecast, CurrentWeather, ForecastDay } from 
 import { getGradient } from "@/lib/weatherUtils"
 import { WeatherCard } from "@/components/WeatherCard"
 import { ForecastCard } from "@/components/ForecastCard"
+import { useTheme } from "@/hooks/useTheme"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 type Status = "idle" | "loading" | "success" | "error"
 
 export default function App() {
+  const { theme, toggle } = useTheme()
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<Status>("idle")
   const [errorMsg, setErrorMsg] = useState("")
   const [weather, setWeather] = useState<CurrentWeather | null>(null)
   const [forecast, setForecast] = useState<ForecastDay[]>([])
   const [gradient, setGradient] = useState("from-violet-600 via-purple-600 to-blue-700")
+
+  useEffect(() => {
+    if (weather) {
+      setGradient(getGradient(weather.condition, weather.icon, theme === "dark"))
+    }
+  }, [theme, weather])
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault()
@@ -34,7 +43,7 @@ export default function App() {
 
       setWeather(currentWeather)
       setForecast(forecastData)
-      setGradient(getGradient(currentWeather.condition, currentWeather.icon))
+      setGradient(getGradient(currentWeather.condition, currentWeather.icon, theme === "dark"))
       setStatus("success")
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Något gick fel")
@@ -64,6 +73,9 @@ export default function App() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg">
             Annas väderapp
           </h1>
+          <div className="ml-auto">
+            <ThemeToggle theme={theme} onToggle={toggle} />
+          </div>
         </div>
       </header>
 
