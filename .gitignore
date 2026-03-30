@@ -24,6 +24,11 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Compiled config artifacts
+vite.config.js
+vite.config.d.ts
+*.tsbuildinfo
+
 # Logs
 logs/
 *.log
